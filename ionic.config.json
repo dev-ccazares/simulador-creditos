@@ -1,0 +1,7 @@
+{
+  "name": "simuladorCreditos",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue"
+}
