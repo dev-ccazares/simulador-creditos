@@ -11,7 +11,6 @@
           <ion-title size="large">Simulador</ion-title>
         </ion-toolbar>
       </ion-header>
-
       <ion-grid fixed>
         <form>
           <ion-row>
@@ -69,20 +68,20 @@
                 </ion-card-title>
               </ion-card-header>
               <ion-list lines="none" class="ion-no-margin">
-              <ion-item>
-                <ion-text color="medium">
-                  <h5>
-                    <ion-icon :icon="bagHandleOutline" class="ion-padding-end" /> Monto Total: <ion-text color="dark">$ 23213</ion-text>
-                  </h5>
-                </ion-text>
-              </ion-item>
-               <ion-item>
-                <ion-text color="medium">
-                  <h5>
-                    <ion-icon :icon="cashOutline" class="ion-padding-end" /> Total Interés: <ion-text color="dark">$ 23213</ion-text>
-                  </h5>
-                </ion-text>
-              </ion-item>
+                <ion-item>
+                  <ion-text color="medium">
+                    <h5>
+                      <ion-icon :icon="bagHandleOutline" class="ion-padding-end" /> Monto Total: <ion-text color="dark">$ {{ calculate.total }}</ion-text>
+                    </h5>
+                  </ion-text>
+                </ion-item>
+                <ion-item>
+                  <ion-text color="medium">
+                    <h5>
+                      <ion-icon :icon="cashOutline" class="ion-padding-end" /> Total Interés: <ion-text color="dark">$ {{ calculate.montoInteres }}</ion-text>
+                    </h5>
+                  </ion-text>
+                </ion-item>
               </ion-list>
             </ion-card>
           </ion-col>
@@ -117,6 +116,10 @@ export default defineComponent({
       interes: ref(),
       plazo: ref(),
     });
+    const calculate = reactive({
+      total: ref(),
+      montoInteres: ref(),
+    });
     const rules = {
       monto: { required: helpers.withMessage('El campo es requerido', required), minValue: helpers.withMessage('El campo debe ser mayor a 0', minValue(0.1)) },
       interes: { required: helpers.withMessage('El campo es requerido', required), minValue: helpers.withMessage('El campo debe ser mayor a 0', minValue(0.1)) },
@@ -127,7 +130,7 @@ export default defineComponent({
       band.value = false;
       v$.value.$touch();
       if (!v$.value.$invalid) {
-        console.log('correcto');
+        simulate();
         band.value = true;
       }
     }
@@ -140,12 +143,22 @@ export default defineComponent({
       v$.value.$reset();
     }
 
+    const simulate = () => {
+      let calc = model.monto * (model.interes / 100);
+      let time = model.plazo / 12;
+      calc = calc * time;
+      calculate.montoInteres = calc.toFixed(2);
+      calculate.total = (Number(model.monto) + Number(calculate.montoInteres)).toFixed(2);
+    }
+
     return {
       v$,
       handleSubmit,
       resetData,
       model,
+      calculate,
       band,
+      simulate,
       version: process.env.VUE_APP_VERSION,
       closeCircle,
       checkmarkCircle,
