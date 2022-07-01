@@ -17,18 +17,23 @@
             <ion-col sizeLg="6" offsetLg="3" size="12">
               <ion-list lines="full" class="ion-no-margin">
                 <ion-item>
-                  <ion-label position="floating">$ Monto</ion-label>
-                  <ion-input v-model="model.monto" type="number" inputmode="numeric" />
+                  <ion-label position="floating">Financiera</ion-label>
+                  <ion-input v-model="model.financiera" type="text" autocomplete="off" />
                 </ion-item>
-                <ion-text v-if="v$.monto.$errors[0]" color="danger" class="ion-padding-top ion-padding-start size-error">{{ v$.monto.$errors[0].$message }}</ion-text>
+                <ion-text v-if="v$.financiera.$errors[0]" color="danger" class="ion-padding-top ion-padding-start size-error">{{ v$.financiera.$errors[0].$message }}</ion-text>
                 <ion-item>
                   <ion-label position="floating">% Interés</ion-label>
-                  <ion-input v-model="model.interes" type="number" inputmode="numeric" />
+                  <ion-input v-model="model.interes" type="number" inputmode="numeric" autocomplete="off" />
                 </ion-item>
                 <ion-text v-if="v$.interes.$errors[0]" color="danger" class="ion-padding-top ion-padding-start size-error">{{ v$.interes.$errors[0].$message }}</ion-text>
                 <ion-item>
+                  <ion-label position="floating">$ Monto</ion-label>
+                  <ion-input v-model="model.monto" type="number" inputmode="numeric" :disabled="band" autocomplete="off" />
+                </ion-item>
+                <ion-text v-if="v$.monto.$errors[0]" color="danger" class="ion-padding-top ion-padding-start size-error">{{ v$.monto.$errors[0].$message }}</ion-text>
+                <ion-item>
                   <ion-label position="floating">Meses Plazo</ion-label>
-                  <ion-select v-model="model.plazo" interface="action-sheet" cancel-text="Cancelar">
+                  <ion-select v-model="model.plazo" interface="action-sheet" cancel-text="Cancelar" :disabled="band" autocomplete="off">
                     <ion-select-option value="6">6 meses</ion-select-option>
                     <ion-select-option value="12">12 meses</ion-select-option>
                     <ion-select-option value="24">24 meses</ion-select-option>
@@ -41,17 +46,23 @@
               </ion-list>
             </ion-col>
             <ion-col sizeLg="6" offsetLg="3" size="12" class="ion-margin-top">
-              <ion-row>
-                <ion-col size="6">
-                  <ion-button expand="full" @click="handleSubmit">
-                    <ion-icon :icon="checkmarkCircle" class="ion-padding-end" />
+              <ion-row class="ion-justify-content-center">
+                <ion-col v-if="band" size="auto">
+                  <ion-button color="tertiary" @click="handleSubmit">
+                    <ion-icon :icon="addCircle" class="ion-padding-end" />
+                    Añadir
+                  </ion-button>
+                </ion-col>
+                <ion-col v-if="!band" size="auto">
+                  <ion-button @click="handleSubmit">
+                    <ion-icon :icon="calculator" class="ion-padding-end" />
                     Calcular
                   </ion-button>
                 </ion-col>
-                <ion-col size="6">
-                  <ion-button expand="full" color="danger" @click="resetData">
-                    <ion-icon :icon="closeCircle" class="ion-padding-end" />
-                    Borrar
+                <ion-col size="auto">
+                  <ion-button color="danger" @click="resetData">
+                    <ion-icon :icon="refreshCircle" class="ion-padding-end" />
+                    Reiniciar
                   </ion-button>
                 </ion-col>
               </ion-row>
@@ -59,19 +70,73 @@
           </ion-row>
         </form>
         <ion-row v-if="band">
-          <ion-col sizeLg="6" offsetLg="3" size="12" class="ion-margin-top">
+          <ion-col v-if="calculateFinal.financiera !== '' && arrayCalculate.length > 1" sizeLg="6" offsetLg="3" size="12" class="ion-margin-top">
             <ion-card>
               <ion-card-header class="ion-no-margin">
-                <ion-card-title>
-                  <ion-icon :icon="bulbOutline" color="primary" />
-                  Resultado
+                <ion-card-title color="success">
+                  <ion-icon :icon="alert" />
+                  MEJOR OPCIÓN
                 </ion-card-title>
               </ion-card-header>
               <ion-list lines="none" class="ion-no-margin">
                 <ion-item>
                   <ion-text color="medium">
                     <h5>
-                      <ion-icon :icon="bagHandleOutline" class="ion-padding-end" /> Monto Total: <ion-text color="dark">$ {{ calculate.total }}</ion-text>
+                      <ion-icon :icon="business" class="ion-padding-end" /> Financiera: <ion-text color="dark">{{ calculateFinal.financiera }}</ion-text>
+                    </h5>
+                  </ion-text>
+                </ion-item>
+                <ion-item>
+                  <ion-text color="medium">
+                    <h5>
+                      <ion-icon :icon="receipt" class="ion-padding-end" /> Monto: <ion-text color="dark">$ {{ calculateFinal.monto }}</ion-text>
+                    </h5>
+                  </ion-text>
+                </ion-item>
+                <ion-item>
+                  <ion-text color="medium">
+                    <h5>
+                      <ion-icon :icon="statsChart" class="ion-padding-end" /> Interés: <ion-text color="dark">{{ calculateFinal.interes }} %</ion-text>
+                    </h5>
+                  </ion-text>
+                </ion-item>
+                <ion-item>
+                  <ion-text color="medium">
+                    <h5>
+                      <ion-icon :icon="cashOutline" class="ion-padding-end" /> Total Interés: <ion-text color="dark">$ {{ calculateFinal.montoInteres }}</ion-text>
+                    </h5>
+                  </ion-text>
+                </ion-item>
+                <ion-item>
+                  <ion-text color="medium">
+                    <h5>
+                      <ion-icon :icon="bagHandleOutline" class="ion-padding-end" /> Monto a Financiar: <ion-text color="dark">$ {{ calculateFinal.total }}</ion-text>
+                    </h5>
+                  </ion-text>
+                </ion-item>
+              </ion-list>
+            </ion-card>
+          </ion-col>
+          <ion-col v-for="(calculate, index) in arrayCalculate" :key="index" :index="index" sizeLg="6" offsetLg="3" size="12" class="ion-margin-top">
+            <ion-card>
+              <ion-card-header class="ion-no-margin">
+                <ion-card-title>
+                  <ion-icon :icon="bulbOutline" color="primary" />
+                  {{ calculate.financiera }}
+                </ion-card-title>
+              </ion-card-header>
+              <ion-list lines="none" class="ion-no-margin" fullscreen>
+                <ion-item>
+                  <ion-text color="medium">
+                    <h5>
+                      <ion-icon :icon="receipt" class="ion-padding-end" /> Monto: <ion-text color="dark">$ {{ calculate.monto }}</ion-text>
+                    </h5>
+                  </ion-text>
+                </ion-item>
+                <ion-item>
+                  <ion-text color="medium">
+                    <h5>
+                      <ion-icon :icon="statsChart" class="ion-padding-end" /> Interés: <ion-text color="dark">{{ calculate.interes }} %</ion-text>
                     </h5>
                   </ion-text>
                 </ion-item>
@@ -82,6 +147,17 @@
                     </h5>
                   </ion-text>
                 </ion-item>
+                <ion-item>
+                  <ion-text color="medium">
+                    <h5>
+                      <ion-icon :icon="bagHandleOutline" class="ion-padding-end" /> Monto a Financiar: <ion-text color="dark">$ {{ calculate.total }}</ion-text>
+                    </h5>
+                  </ion-text>
+                </ion-item>
+                <ion-button expand="full" class="ion-margin-horizontal" color="danger" @click="drop(index)">
+                  <ion-icon :icon="trash" class="ion-padding-end" />
+                  Eliminar
+                </ion-button>
               </ion-list>
             </ion-card>
           </ion-col>
@@ -98,7 +174,8 @@ import {
   IonGrid, IonRow, IonItem, IonList, IonLabel, IonSelect, IonSelectOption, IonInput, IonCard,
   IonCardHeader, IonCardTitle
 } from '@ionic/vue';
-import { checkmarkCircle, closeCircle, bulbOutline, bagHandleOutline, cashOutline } from 'ionicons/icons';
+import { refreshCircle, addCircle, bulbOutline, bagHandleOutline, cashOutline, calculator,
+         receipt, statsChart, business, alert, trash } from 'ionicons/icons';
 import { required, helpers, minValue } from '@vuelidate/validators';
 import useValidate from '@vuelidate/core';
 
@@ -110,17 +187,33 @@ export default defineComponent({
     IonCardHeader, IonCardTitle
   },
   setup() {
+    interface calculate{
+      financiera: string;
+      monto: number;
+      interes: number;
+      plazo: number;
+      montoInteres: string;
+      total: string;
+    }
+
     const band = ref(false);
     const model = reactive({
+      financiera: ref(),
       monto: ref(),
       interes: ref(),
       plazo: ref(),
     });
-    const calculate = reactive({
-      total: ref(),
-      montoInteres: ref(),
+    const calculateFinal = reactive<calculate>({
+      financiera: '',
+      monto: 0,
+      interes: 0,
+      plazo: 0,
+      montoInteres: '',
+      total: '',
     });
+    const arrayCalculate = reactive<calculate[]>([calculateFinal]);
     const rules = {
+      financiera: { required: helpers.withMessage('El campo es requerido', required) },
       monto: { required: helpers.withMessage('El campo es requerido', required), minValue: helpers.withMessage('El campo debe ser mayor a 0', minValue(0.1)) },
       interes: { required: helpers.withMessage('El campo es requerido', required), minValue: helpers.withMessage('El campo debe ser mayor a 0', minValue(0.1)) },
       plazo: { required: helpers.withMessage('El campo es requerido', required) },
@@ -130,13 +223,16 @@ export default defineComponent({
       band.value = false;
       v$.value.$touch();
       if (!v$.value.$invalid) {
-        simulate();
+        if(!arrayCalculate.some(x => x.financiera === model.financiera.toUpperCase())){
+          simulate();
+        }
         band.value = true;
       }
     }
 
     const resetData = () => {
       band.value = false;
+      model.financiera = null;
       model.monto = null;
       model.interes = null;
       model.plazo = null;
@@ -147,8 +243,55 @@ export default defineComponent({
       let calc = model.monto * (model.interes / 100);
       let time = model.plazo / 12;
       calc = calc * time;
-      calculate.montoInteres = calc.toFixed(2);
-      calculate.total = (Number(model.monto) + Number(calculate.montoInteres)).toFixed(2);
+      let totalInteres = calc.toFixed(2);
+      let dataPush: calculate = {
+        financiera: model.financiera.toUpperCase(),
+        monto: Number(model.monto),
+        interes: Number(model.interes),
+        plazo: model.plazo,
+        montoInteres: totalInteres,
+        total: (Number(model.monto) + Number(totalInteres)).toFixed(2),
+      }
+      if(arrayCalculate[0].financiera === ''){
+        arrayCalculate[0] = dataPush;
+      }else{
+        arrayCalculate.push(dataPush);
+        simulateFinal();
+      }
+    }
+
+    const simulateFinal = () => {
+      arrayCalculate.forEach((item: calculate) => {
+        if(calculateFinal.montoInteres === ''){
+          asign(item);
+        }
+        if(Number(calculateFinal.montoInteres) > Number(item.montoInteres)){
+          asign(item);
+        }
+      });
+    }
+
+    const asign = (item: calculate)=> {
+      calculateFinal.financiera = item.financiera;
+      calculateFinal.monto = item.monto;
+      calculateFinal.interes = item.interes;
+      calculateFinal.plazo = item.plazo;
+      calculateFinal.montoInteres = item.montoInteres;
+      calculateFinal.total = item.total;
+    }
+
+    const drop = (key: number) => {
+      if(key === 0){
+        band.value = false;
+        arrayCalculate[0].financiera = '';
+        arrayCalculate[0].monto = 0;
+        arrayCalculate[0].interes = 0;
+        arrayCalculate[0].plazo = 0;
+        arrayCalculate[0].montoInteres = '';
+        arrayCalculate[0].total = '';
+      }else{
+        arrayCalculate.splice(key,1);
+      }
     }
 
     return {
@@ -156,15 +299,23 @@ export default defineComponent({
       handleSubmit,
       resetData,
       model,
-      calculate,
+      arrayCalculate,
+      calculateFinal,
+      drop,
       band,
       simulate,
       version: process.env.VUE_APP_VERSION,
-      closeCircle,
-      checkmarkCircle,
+      addCircle,
+      refreshCircle,
       bulbOutline,
       bagHandleOutline,
-      cashOutline
+      cashOutline,
+      calculator,
+      receipt,
+      statsChart,
+      business,
+      alert,
+      trash
     }
   }
 });
