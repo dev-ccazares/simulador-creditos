@@ -23,12 +23,12 @@
                 <ion-text v-if="v$.financiera.$errors[0]" color="danger" class="ion-padding-top ion-padding-start size-error">{{ v$.financiera.$errors[0].$message }}</ion-text>
                 <ion-item>
                   <ion-label position="floating">% Interés</ion-label>
-                  <ion-input v-model="model.interes" type="number" inputmode="numeric" autocomplete="off" />
+                  <ion-input v-model="model.interes" type="text" inputmode="numeric" autocomplete="off" />
                 </ion-item>
                 <ion-text v-if="v$.interes.$errors[0]" color="danger" class="ion-padding-top ion-padding-start size-error">{{ v$.interes.$errors[0].$message }}</ion-text>
                 <ion-item>
                   <ion-label position="floating">$ Monto</ion-label>
-                  <ion-input v-model="model.monto" type="number" inputmode="numeric" :disabled="band" autocomplete="off" />
+                  <ion-input v-model="model.monto" type="text" inputmode="numeric" :disabled="band" autocomplete="off" />
                 </ion-item>
                 <ion-text v-if="v$.monto.$errors[0]" color="danger" class="ion-padding-top ion-padding-start size-error">{{ v$.monto.$errors[0].$message }}</ion-text>
                 <ion-item>
@@ -172,12 +172,13 @@ import { defineComponent, reactive, ref } from 'vue';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonCol, IonButton, IonText, IonIcon,
   IonGrid, IonRow, IonItem, IonList, IonLabel, IonSelect, IonSelectOption, IonInput, IonCard,
-  IonCardHeader, IonCardTitle
+  IonCardHeader, IonCardTitle, toastController
 } from '@ionic/vue';
 import { refreshCircle, addCircle, bulbOutline, bagHandleOutline, cashOutline, calculator,
          receipt, statsChart, business, alert, trash } from 'ionicons/icons';
 import { required, helpers, minValue } from '@vuelidate/validators';
 import useValidate from '@vuelidate/core';
+const onlyNumeber = helpers.regex(/^\d+([.]{0,1}\d{0,2})$/);
 
 export default defineComponent({
   name: 'Tab1Page',
@@ -214,17 +215,29 @@ export default defineComponent({
     const arrayCalculate = reactive<calculate[]>([calculateFinal]);
     const rules = {
       financiera: { required: helpers.withMessage('El campo es requerido', required) },
-      monto: { required: helpers.withMessage('El campo es requerido', required), minValue: helpers.withMessage('El campo debe ser mayor a 0', minValue(0.1)) },
-      interes: { required: helpers.withMessage('El campo es requerido', required), minValue: helpers.withMessage('El campo debe ser mayor a 0', minValue(0.1)) },
+      monto: { required: helpers.withMessage('El campo es requerido', required),onlyNumeber: helpers.withMessage('El campo debe ser número y máximo con 2 decimales', onlyNumeber), minValue: helpers.withMessage('El campo debe ser mayor a 0', minValue(0.1)) },
+      interes: { required: helpers.withMessage('El campo es requerido', required),onlyNumeber: helpers.withMessage('El campo debe ser número y máximo con 2 decimales', onlyNumeber), minValue: helpers.withMessage('El campo debe ser mayor a 0', minValue(0.1)) },
       plazo: { required: helpers.withMessage('El campo es requerido', required) },
     };
     const v$ = useValidate(rules, model);
-    const handleSubmit = () => {
-      band.value = false;
+
+    const handleSubmit = async () => {
       v$.value.$touch();
       if (!v$.value.$invalid) {
         if(!arrayCalculate.some(x => x.financiera === model.financiera.toUpperCase())){
           simulate();
+          model.financiera = null;
+          model.interes = null;
+          v$.value.$reset();
+        } else {
+          const toast = await toastController
+              .create({
+                message: 'Financiera ya existe.',
+                position: 'top',
+                color: 'warning',
+                duration: 2000
+              })
+            return toast.present();
         }
         band.value = true;
       }
@@ -236,6 +249,13 @@ export default defineComponent({
       model.monto = null;
       model.interes = null;
       model.plazo = null;
+      arrayCalculate[0].financiera = '';
+      arrayCalculate[0].monto = 0;
+      arrayCalculate[0].interes = 0;
+      arrayCalculate[0].plazo = 0;
+      arrayCalculate[0].montoInteres = '';
+      arrayCalculate[0].total = '';
+      arrayCalculate.splice(1,(arrayCalculate.length - 1));
       v$.value.$reset();
     }
 
@@ -281,7 +301,7 @@ export default defineComponent({
     }
 
     const drop = (key: number) => {
-      if(key === 0){
+      if(arrayCalculate.length === 1){
         band.value = false;
         arrayCalculate[0].financiera = '';
         arrayCalculate[0].monto = 0;
